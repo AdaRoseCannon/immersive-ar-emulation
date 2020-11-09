@@ -1,0 +1,22 @@
+{
+  "name": "immersive-ar-emulation",
+  "version": "1.0.0",
+  "description": "Emulate Immersive AR in VR Headsets",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AdaRoseCannon/immersive-ar-emulation.git"
+  },
+  "author": "Ada Rose Cannon",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/AdaRoseCannon/immersive-ar-emulation/issues"
+  },
+  "homepage": "https://github.com/AdaRoseCannon/immersive-ar-emulation#readme",
+  "dependencies": {
+    "three": "^0.122.0"
+  }
+}
