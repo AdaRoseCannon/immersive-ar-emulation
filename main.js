@@ -9,7 +9,7 @@ import {
 	PlaneGeometry,
 	Mesh,
 	Color
-} from "/node_modules/three/build/three.module.js";
+} from "./node_modules/three/build/three.module.js";
 
 import {
 	DRACOLoader
