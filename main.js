@@ -148,7 +148,7 @@ class HitTest {
 		renderer.setSize( window.innerWidth, window.innerHeight );
 	}
 
-	loadModel('/assets/doggy.glb')
+	loadModel('./assets/doggy.glb')
 		.then(gltf => {
 			const dog = gltf.scene;
 			dog.position.copy(target);
