@@ -26,7 +26,7 @@ import {
 
 const loader = new GLTFLoader();
 const dracoLoader = new DRACOLoader();
-dracoLoader.setDecoderPath( '/node_modules/three/examples/js/libs/draco/' );
+dracoLoader.setDecoderPath( './node_modules/three/examples/js/libs/draco/' );
 loader.setDRACOLoader(dracoLoader);
 
 function loadModel(url) {
