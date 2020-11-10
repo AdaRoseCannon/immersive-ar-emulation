@@ -9,20 +9,20 @@ import {
 	PlaneGeometry,
 	Mesh,
 	Color
-} from "./node_modules/three/build/three.module.js";
+} from "./node_modules/three/build/three.module.js?";
 
 import {
 	DRACOLoader
-} from "./node_modules/three/examples/jsm/loaders/DRACOLoader.js"
+} from "./node_modules/three/examples/jsm/loaders/DRACOLoader.js?";
 import {
 	GLTFLoader
-} from "./node_modules/three/examples/jsm/loaders/GLTFLoader.js"
+} from "./node_modules/three/examples/jsm/loaders/GLTFLoader.js?";
 import {
 	OrbitControls
-} from "./node_modules/three/examples/jsm/controls/OrbitControls.js";
+} from "./node_modules/three/examples/jsm/controls/OrbitControls.js?";
 import {
 	ARButton
-} from "./node_modules/three/examples/jsm/webxr/ARButton.js";
+} from "./node_modules/three/examples/jsm/webxr/ARButton.js?";
 
 const loader = new GLTFLoader();
 const dracoLoader = new DRACOLoader();
