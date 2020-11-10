@@ -12,6 +12,17 @@ node_modules/three/build/*
 
 node_modules/three/examples/*
 !node_modules/three/examples/jsm
+!node_modules/three/examples/js
+
+node_modules/three/examples/js/*
+!node_modules/three/examples/js/libs
+
+node_modules/three/examples/js/libs/*
+!node_modules/three/examples/js/libs/draco/
+
+node_modules/three/examples/js/libs/draco/*
+!node_modules/three/examples/js/libs/draco/draco_wasm_wrapper.js
+!node_modules/three/examples/js/libs/draco/draco_decoder.wasm
 
 node_modules/three/examples/jsm/*
 !node_modules/three/examples/jsm/loaders
