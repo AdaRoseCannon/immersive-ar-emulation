@@ -10,16 +10,30 @@
 			height: 100%;
 			margin: 0;
 			padding: 0;
+			font-size: 0;
 		}
 
 		#overlay {
 			overflow: hidden;
 			position: absolute;
 			pointer-events: none;
+			display: flex;
+			align-items: end;
+			box-sizing: border-box;
+			justify-content: center;
 		}
 
 		#overlay > * {
 			pointer-events: auto;
+		}
+
+		#overlay button {
+			left: auto !important;
+			position: relative !important;
+			bottom: auto !important;
+			margin: 20px !important;
+			min-width: 100px;
+			width: auto !important;
 		}
 	</style>
 </head>

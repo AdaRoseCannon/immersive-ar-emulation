@@ -23,6 +23,9 @@ import {
 import {
 	ARButton
 } from "./node_modules/three/examples/jsm/webxr/ARButton.js?";
+import {
+	EmulateARButton
+} from "./immersive-ar-emulation-button/EmulateARButton.js";
 
 const loader = new GLTFLoader();
 const dracoLoader = new DRACOLoader();
@@ -48,23 +51,30 @@ function loadModel(url) {
 }
 
 class HitTest {
-	constructor(renderer) {
+	constructor(renderer, options) {
+		console.log('Creating new HitTest');
+
 		this.renderer = renderer;
 		this.xrHitTestSource = null;
 
-		renderer.xr.addEventListener("sessionend", () => {
-			this.xrHitTestSource = null;
-		});
+		renderer.xr.addEventListener("sessionend", () => { this.xrHitTestSource = null; });
 
-		renderer.xr.addEventListener("sessionstart", async () => {
-			this.session = renderer.xr.getSession();
-			
-			const viewerSpace = await this.session.requestReferenceSpace('viewer');
-			const hitTestSource = await this.session.requestHitTestSource({
-				space: viewerSpace,
-			});
-			this.xrHitTestSource = hitTestSource;
-		});
+		renderer.xr.addEventListener("sessionstart", () => this.sessionStart(options));
+		
+		if (this.renderer.xr.isPresenting) {
+			this.sessionStart(options)
+		}
+	}
+
+	async sessionStart(options) {
+		this.session = this.renderer.xr.getSession();
+		try {
+			this.xrHitTestSource = await this.session.requestHitTestSource(options);
+		} catch (e) {
+			console.log(e.message + ' trying transient input');
+			this.xrHitTestSource = await this.session.requestHitTestSourceForTransientInput(options);
+			this.transient = true;
+		} 
 	}
 
 	doHit(frame) {
@@ -73,18 +83,34 @@ class HitTest {
 		const xrViewerPose = frame.getViewerPose(refSpace);
 
 		if (this.xrHitTestSource && xrViewerPose) {
-			const hitTestResults = frame.getHitTestResults(this.xrHitTestSource);
-			if (hitTestResults.length > 0) {
-				const pose = hitTestResults[0].getPose(refSpace);
-				return pose;
+
+			if (this.transient) {
+				const hitTestResults = frame.getHitTestResultsForTransientInput(this.xrHitTestSource);
+				if (hitTestResults.length > 0) {
+					const results = hitTestResults[0].results;
+					if (results.length > 0) {
+						const pose = results[0].getPose(refSpace);
+						return pose;
+					} else {
+						return false
+					}
+				} else {
+					return false;
+				}
 			} else {
-				return false;
+				const hitTestResults = frame.getHitTestResults(this.xrHitTestSource);
+				if (hitTestResults.length > 0) {
+					const pose = hitTestResults[0].getPose(refSpace);
+					return pose;
+				} else {
+					return false;
+				}
 			}
 		}
 	}
 }
 
-(function init() {
+(async function init() {
  
 	const target = new Vector3(0, 0, -1);
 	const camera = new PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 10);
@@ -93,7 +119,15 @@ class HitTest {
  
 	const scene = new Scene();
 	const renderer = new WebGLRenderer({ antialias: true });
-	const controller = renderer.xr.getController(0);
+
+	const dog = await loadModel('./assets/doggy.glb')
+		.then(gltf => {
+			const dog = gltf.scene;
+			dog.position.copy(target);
+			dog.children[2].rotation.y = Math.PI * 0.9;
+			scene.add(dog);
+			return dog;
+		});
 	
 	renderer.xr.enabled = true;
 	renderer.setSize(window.innerWidth, window.innerHeight);
@@ -103,10 +137,16 @@ class HitTest {
 		optionalFeatures: ["dom-overlay", "hit-test", "local-floor"],
 		domOverlay: {
 			root: window.overlay
-		},
-
+		}
 	}));
-	
+
+	window.overlay.appendChild(EmulateARButton.createButton(renderer, {
+		optionalFeatures: ["dom-overlay", "hit-test", "local-floor"],
+		domOverlay: {
+			root: window.overlay
+		}
+	}), scene);
+
 	const controls = new OrbitControls(camera, renderer.domElement);
 	controls.target = target;
 	controls.update();
@@ -130,13 +170,40 @@ class HitTest {
 	reticle.position.copy(target);
 	scene.add(reticle);
 
-	const hitTest = new HitTest(renderer, reticle);
+	let hitTest = null;
+	const hitTestCache = new Map();
+	renderer.xr.addEventListener('sessionstart', async function () {
+		const session = renderer.xr.getSession();
+
+		// Default to selecting through the face
+		const viewerSpace = await session.requestReferenceSpace('viewer');
+		hitTest = new HitTest(renderer, {
+			space: viewerSpace
+		});
+
+		session.addEventListener('selectstart', function ({ inputSource }) {
+			hitTest = hitTestCache.get(inputSource) || new HitTest(renderer, {
+				space: inputSource.targetRaySpace,
+				profile: inputSource.profiles.slice(-1)[0]
+			});
+			hitTestCache.set(inputSource, hitTest);
+		});
+
+		session.addEventListener('selectend', function () {
+			hitTest = null;
+			dog.position.copy(reticle.position);
+			dog.quaternion.copy(reticle.quaternion);
+		});
+	});
  
 	renderer.setAnimationLoop(function (timestamp, frame) {
-		const pose = hitTest.doHit(frame);
-		if (pose) {
-			reticle.position.copy(pose.transform.position);
-			reticle.quaternion.copy(pose.transform.orientation);
+
+		if (hitTest) {
+			const pose = hitTest.doHit(frame);
+			if (pose) {
+				reticle.position.copy(pose.transform.position);
+				reticle.quaternion.copy(pose.transform.orientation);
+			}
 		}
 		renderer.render(scene, camera);
 	});
@@ -147,17 +214,4 @@ class HitTest {
 		camera.updateProjectionMatrix();
 		renderer.setSize( window.innerWidth, window.innerHeight );
 	}
-
-	loadModel('./assets/doggy.glb')
-		.then(gltf => {
-			const dog = gltf.scene;
-			dog.position.copy(target);
-			dog.children[2].rotation.y = Math.PI * 0.9;
-			scene.add(dog);
-
-			controller.addEventListener('select', function () {
-				dog.position.copy(reticle.position);
-				dog.quaternion.copy(reticle.quaternion);
-			});
-		});
 })();
