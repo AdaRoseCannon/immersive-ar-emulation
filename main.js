@@ -68,10 +68,10 @@ class HitTest {
 
 	async sessionStart(options) {
 		this.session = this.renderer.xr.getSession();
-		try {
+		
+		if (options.space) {
 			this.xrHitTestSource = await this.session.requestHitTestSource(options);
-		} catch (e) {
-			console.log(e.message + ' trying transient input');
+		} else if ( options.profile ) {
 			this.xrHitTestSource = await this.session.requestHitTestSourceForTransientInput(options);
 			this.transient = true;
 		} 
@@ -121,13 +121,13 @@ class HitTest {
 	const renderer = new WebGLRenderer({ antialias: true });
 
 	const dog = await loadModel('./assets/doggy.glb')
-		.then(gltf => {
-			const dog = gltf.scene;
-			dog.position.copy(target);
-			dog.children[2].rotation.y = Math.PI * 0.9;
-			scene.add(dog);
-			return dog;
-		});
+	.then(gltf => {
+		const dog = gltf.scene;
+		dog.position.copy(target);
+		dog.children[2].rotation.y = Math.PI * 0.9;
+		scene.add(dog);
+		return dog;
+	});
 	
 	renderer.xr.enabled = true;
 	renderer.setSize(window.innerWidth, window.innerHeight);
@@ -181,12 +181,20 @@ class HitTest {
 			space: viewerSpace
 		});
 
+		const profileToSupport = "generic-touchscreen";
+		const transientHitTest = new HitTest(renderer, {
+			profile: profileToSupport,
+		});
+
 		session.addEventListener('selectstart', function ({ inputSource }) {
-			hitTest = hitTestCache.get(inputSource) || new HitTest(renderer, {
-				space: inputSource.targetRaySpace,
-				profile: inputSource.profiles.slice(-1)[0]
-			});
-			hitTestCache.set(inputSource, hitTest);
+			if (inputSource.profiles[0] === profileToSupport) {
+				hitTest = transientHitTest;
+			} else {
+				hitTest = hitTestCache.get(inputSource) || new HitTest(renderer, {
+					space: inputSource.targetRaySpace
+				});
+				hitTestCache.set(inputSource, hitTest);
+			}
 		});
 
 		session.addEventListener('selectend', function () {
