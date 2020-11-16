@@ -1,4 +1,8 @@
 import {
+	environment,
+	isUsingEmulatedAR
+} from "./immersive-ar-emulation-button/EmulateAR.js";
+import {
 	PerspectiveCamera,
 	SpotLight,
 	WebGLRenderer,
@@ -9,23 +13,20 @@ import {
 	PlaneGeometry,
 	Mesh,
 	Color
-} from "./node_modules/three/build/three.module.js?";
+} from "./node_modules/three/build/three.module.js";
 
 import {
 	DRACOLoader
-} from "./node_modules/three/examples/jsm/loaders/DRACOLoader.js?";
+} from "./node_modules/three/examples/jsm/loaders/DRACOLoader.js";
 import {
 	GLTFLoader
-} from "./node_modules/three/examples/jsm/loaders/GLTFLoader.js?";
+} from "./node_modules/three/examples/jsm/loaders/GLTFLoader.js";
 import {
 	OrbitControls
-} from "./node_modules/three/examples/jsm/controls/OrbitControls.js?";
+} from "./node_modules/three/examples/jsm/controls/OrbitControls.js";
 import {
 	ARButton
-} from "./node_modules/three/examples/jsm/webxr/ARButton.js?";
-import {
-	EmulateARButton
-} from "./immersive-ar-emulation-button/EmulateARButton.js";
+} from "./node_modules/three/examples/jsm/webxr/ARButton.js";
 
 const loader = new GLTFLoader();
 const dracoLoader = new DRACOLoader();
@@ -140,13 +141,6 @@ class HitTest {
 		}
 	}));
 
-	window.overlay.appendChild(EmulateARButton.createButton(renderer, {
-		optionalFeatures: ["dom-overlay", "hit-test", "local-floor"],
-		domOverlay: {
-			root: window.overlay
-		}
-	}), scene);
-
 	const controls = new OrbitControls(camera, renderer.domElement);
 	controls.target = target;
 	controls.update();
@@ -174,6 +168,10 @@ class HitTest {
 	const hitTestCache = new Map();
 	renderer.xr.addEventListener('sessionstart', async function () {
 		const session = renderer.xr.getSession();
+
+		if (await isUsingEmulatedAR()) {
+			scene.add(await environment());
+		}
 
 		// Default to selecting through the face
 		const viewerSpace = await session.requestReferenceSpace('viewer');
