@@ -1,7 +1,5 @@
-import {
-	environment,
-	isUsingEmulatedAR
-} from "./immersive-ar-emulation-button/EmulateAR.js";
+import initEmulateAR from "./build/EmulateAR.js";
+
 import {
 	PerspectiveCamera,
 	SpotLight,
@@ -32,6 +30,34 @@ const loader = new GLTFLoader();
 const dracoLoader = new DRACOLoader();
 dracoLoader.setDecoderPath( './node_modules/three/examples/js/libs/draco/' );
 loader.setDRACOLoader(dracoLoader);
+ 
+const target = new Vector3(0, 0, -1);
+const camera = new PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 10);
+camera.position.y = 1.6;
+camera.lookAt(0, 0, -1);
+
+const scene = new Scene();
+const renderer = new WebGLRenderer({ antialias: true });
+
+renderer.xr.enabled = true;
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target = target;
+controls.update();
+
+const ambientLight = new AmbientLight(0x404040); // soft white light
+ambientLight.name = "ambientLight";
+ambientLight.intensity = 4;
+scene.add(ambientLight);
+
+// FRONTLIGHT
+const frontLight = new SpotLight(0xffffff);
+frontLight.name = "frontLight";
+frontLight.position.set(0, 15, 25);
+frontLight.target.position.set(0, 0, 0);
+frontLight.intensity = 0.2;
 
 function loadModel(url) {
 	
@@ -112,14 +138,14 @@ class HitTest {
 }
 
 (async function init() {
- 
-	const target = new Vector3(0, 0, -1);
-	const camera = new PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 10);
-	camera.position.y = 1.6;
-	camera.lookAt(0, 0, -1);
- 
-	const scene = new Scene();
-	const renderer = new WebGLRenderer({ antialias: true });
+	await initEmulateAR({scene, renderer});
+	
+	window.overlay.appendChild(ARButton.createButton(renderer, {
+		optionalFeatures: ["dom-overlay", "hit-test", "local-floor"],
+		domOverlay: {
+			root: window.overlay
+		}
+	}));
 
 	const dog = await loadModel('./assets/doggy.glb')
 	.then(gltf => {
@@ -129,33 +155,6 @@ class HitTest {
 		scene.add(dog);
 		return dog;
 	});
-	
-	renderer.xr.enabled = true;
-	renderer.setSize(window.innerWidth, window.innerHeight);
-	document.body.appendChild(renderer.domElement);
-
-	window.overlay.appendChild(ARButton.createButton(renderer, {
-		optionalFeatures: ["dom-overlay", "hit-test", "local-floor"],
-		domOverlay: {
-			root: window.overlay
-		}
-	}));
-
-	const controls = new OrbitControls(camera, renderer.domElement);
-	controls.target = target;
-	controls.update();
-
-	const ambientLight = new AmbientLight(0x404040); // soft white light
-	ambientLight.name = "ambientLight";
-	ambientLight.intensity = 4;
-	scene.add(ambientLight);
-
-	// FRONTLIGHT
-	const frontLight = new SpotLight(0xffffff);
-	frontLight.name = "frontLight";
-	frontLight.position.set(0, 15, 25);
-	frontLight.target.position.set(0, 0, 0);
-	frontLight.intensity = 0.2;
 
 	const reticle = new Mesh(
 		new PlaneGeometry(0.5, 0.5, 1, 1).rotateX(-Math.PI/2),
@@ -168,10 +167,6 @@ class HitTest {
 	const hitTestCache = new Map();
 	renderer.xr.addEventListener('sessionstart', async function () {
 		const session = renderer.xr.getSession();
-
-		if (await isUsingEmulatedAR()) {
-			scene.add(await environment());
-		}
 
 		// Default to selecting through the face
 		const viewerSpace = await session.requestReferenceSpace('viewer');
@@ -221,3 +216,8 @@ class HitTest {
 		renderer.setSize( window.innerWidth, window.innerHeight );
 	}
 })();
+
+export {
+	scene,
+	renderer
+};

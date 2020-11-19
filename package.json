@@ -4,7 +4,8 @@
   "description": "Emulate Immersive AR in VR Headsets",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "rm -rf build/*; rollup -c; find build -maxdepth 1 -not -type d -exec du -h {} \\;",
+    "develop": "rollup -w -c; find build -maxdepth 1 -not -type d -exec du -h {} \\;"
   },
   "repository": {
     "type": "git",
@@ -17,6 +18,11 @@
   },
   "homepage": "https://github.com/AdaRoseCannon/immersive-ar-emulation#readme",
   "dependencies": {
-    "three": "^0.122.0"
+    "three": "^0.122.0",
+    "eslint": "^7",
+    "rollup": "^2.29.0",
+    "@rollup/plugin-node-resolve": "^9",
+    "rollup-plugin-commonjs": "^10.1.0",
+    "rollup-plugin-terser": "^7.0.2"
   }
 }
