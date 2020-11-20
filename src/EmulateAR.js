@@ -1,8 +1,4 @@
 import {
-	DRACOLoader
-} from "three/examples/jsm/loaders/DRACOLoader";
-
-import {
 	GLTFLoader
 } from "three/examples/jsm/loaders/GLTFLoader";
 
@@ -13,9 +9,6 @@ import {
 } from "three";
 
 const loader = new GLTFLoader();
-const dracoLoader = new DRACOLoader();
-dracoLoader.setDecoderPath( './node_modules/three/examples/js/libs/draco/' );
-loader.setDRACOLoader(dracoLoader);
 
 function loadModel(url) {
 	
@@ -36,11 +29,14 @@ function loadModel(url) {
 }
 
 let environmentModel;
-async function environment(url = './assets/room.glb') {
+async function environment(scene, url = './assets/room.glb') {
 
 	if (environmentModel) return environmentModel;
+
 	environmentModel = await loadModel(url)
 		.then(gltf => gltf.scene);
+	
+	scene.add(environmentModel);
 	
 	environmentModel.traverse(o => {
 		if (o.geometry && o.material) {
@@ -49,7 +45,7 @@ async function environment(url = './assets/room.glb') {
 	});
 	
 	return environmentModel;
-} 
+}
 
 async function requestHitTestSource(options) {
 	const session = this;
@@ -78,6 +74,9 @@ class HitTestSource {
 
 const quaternion = new Quaternion();
 function normalToOrientation(normal, direction) {
+
+	// TODO: Do something with direction
+	direction;
 
 	// Find out what the angle should be from the direction vector
 	quaternion.setFromAxisAngle(normal, 0);
@@ -144,21 +143,47 @@ function getHitTestResults(hitTestSource) {
 		))
 }
 
-export default async function init({ scene, renderer }) {
+
+let inSession = false;
+function onSessionEnded() {
+	inSession = false;
+}
+function onSessionStart() {
+	inSession = true;
+}
+
+let renderFunc = function () { };
+export function renderEnvironment(camera) {
+	renderFunc(camera);
+}
+
+export async function init({ renderer, scene, environmentURL }) {
 	
 	if (!navigator.xr) return;
-
+'./assets/room.glb'
 	// if AR is already supported we don't need to do anything
 	if (await navigator.xr.isSessionSupported('immersive-ar')) return;
 
 	// if immersive-vr isn't supported then we can't do anything
 	if (! await navigator.xr.isSessionSupported('immersive-vr')) return;
 
+
+	const bgscene = scene.clone(false);
+	renderFunc = function renderEnvironment(camera) {
+	
+		if (!inSession) return;
+		renderer.clear();
+		if (!environmentModel) return;
+		renderer.render(bgscene, camera);
+		renderer.clearDepth();
+	}
+
+	renderer.autoClear = false;
+	await environment(bgscene, environmentURL);
 	
 	renderer.xr.addEventListener('sessionstart', async function () {
 
 		setReferenceSpace(renderer.xr.getReferenceSpace());
-		scene.add(await environment());
 
 	});
 
@@ -180,9 +205,14 @@ export default async function init({ scene, renderer }) {
 	
 		if (type === 'immersive-ar') {
 			type = 'immersive-vr';
+		} else {
+			return;
 		}
 
 		const session = await requestSessionOld(type, sessionInit);
+
+		onSessionStart();
+		session.addEventListener( 'end', onSessionEnded );
 
 		Object.defineProperty(session, 'requestHitTestSource', {
 			value: requestHitTestSource,
@@ -193,6 +223,11 @@ export default async function init({ scene, renderer }) {
 			value: requestHitTestSourceForTransientInput,
 			configurable: true
 		});
+
+		// Object.defineProperty(session, 'requestHitTestSourceForTransientInput', {
+		// 	value: requestHitTestSourceForTransientInput,
+		// 	configurable: true
+		// });
 
 		return session;
 	}

@@ -1,4 +1,4 @@
-import initEmulateAR from "./build/EmulateAR.js";
+import { init as initEmulateAR, renderEnvironment } from "../build/EmulateAR.js";
 
 import {
 	PerspectiveCamera,
@@ -11,24 +11,24 @@ import {
 	PlaneGeometry,
 	Mesh,
 	Color
-} from "./node_modules/three/build/three.module.js";
+} from "../node_modules/three/build/three.module.js";
 
 import {
 	DRACOLoader
-} from "./node_modules/three/examples/jsm/loaders/DRACOLoader.js";
+} from "../node_modules/three/examples/jsm/loaders/DRACOLoader.js";
 import {
 	GLTFLoader
-} from "./node_modules/three/examples/jsm/loaders/GLTFLoader.js";
+} from "../node_modules/three/examples/jsm/loaders/GLTFLoader.js";
 import {
 	OrbitControls
-} from "./node_modules/three/examples/jsm/controls/OrbitControls.js";
+} from "../node_modules/three/examples/jsm/controls/OrbitControls.js";
 import {
 	ARButton
-} from "./node_modules/three/examples/jsm/webxr/ARButton.js";
+} from "../node_modules/three/examples/jsm/webxr/ARButton.js";
 
 const loader = new GLTFLoader();
 const dracoLoader = new DRACOLoader();
-dracoLoader.setDecoderPath( './node_modules/three/examples/js/libs/draco/' );
+dracoLoader.setDecoderPath( '../node_modules/three/examples/js/libs/draco/' );
 loader.setDRACOLoader(dracoLoader);
  
 const target = new Vector3(0, 0, -1);
@@ -138,7 +138,7 @@ class HitTest {
 }
 
 (async function init() {
-	await initEmulateAR({scene, renderer});
+	await initEmulateAR({ scene, renderer, environmentURL: '../assets/room.glb' }).catch(e => console.error(e));
 	
 	window.overlay.appendChild(ARButton.createButton(renderer, {
 		optionalFeatures: ["dom-overlay", "hit-test", "local-floor"],
@@ -206,6 +206,8 @@ class HitTest {
 				reticle.quaternion.copy(pose.transform.orientation);
 			}
 		}
+
+		renderEnvironment(camera);
 		renderer.render(scene, camera);
 	});
 	
