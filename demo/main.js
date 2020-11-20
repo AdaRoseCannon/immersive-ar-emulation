@@ -84,8 +84,7 @@ class HitTest {
 		this.renderer = renderer;
 		this.xrHitTestSource = null;
 
-		renderer.xr.addEventListener("sessionend", () => { this.xrHitTestSource = null; });
-
+		renderer.xr.addEventListener("sessionend", () => this.xrHitTestSource = null);
 		renderer.xr.addEventListener("sessionstart", () => this.sessionStart(options));
 		
 		if (this.renderer.xr.isPresenting) {
@@ -138,7 +137,7 @@ class HitTest {
 }
 
 (async function init() {
-	await initEmulateAR({ scene, renderer, environmentURL: '../assets/room.glb' }).catch(e => console.error(e));
+	await initEmulateAR({ scene, renderer }).catch(e => console.error(e));
 	
 	window.overlay.appendChild(ARButton.createButton(renderer, {
 		optionalFeatures: ["dom-overlay", "hit-test", "local-floor"],

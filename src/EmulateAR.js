@@ -5,6 +5,7 @@ import {
 import {
 	Raycaster,
 	Vector3,
+	Matrix4,
 	Quaternion
 } from "three";
 
@@ -29,7 +30,7 @@ function loadModel(url) {
 }
 
 let environmentModel;
-async function environment(scene, url = './assets/room.glb') {
+async function environment(scene, url) {
 
 	if (environmentModel) return environmentModel;
 
@@ -72,15 +73,18 @@ class HitTestSource {
 	}
 }
 
-const quaternion = new Quaternion();
+const tempQuaternion = new Quaternion();
+const tempMatrix = new Matrix4();
+const originVec = new Vector3();
+const tempVec = new Vector3();
 function normalToOrientation(normal, direction) {
-
-	// TODO: Do something with direction
-	direction;
+	tempMatrix.identity();
+	tempVec.crossVectors(normal, direction.multiplyScalar(-1)).normalize();
+	tempMatrix.lookAt(tempVec, originVec, normal);
 
 	// Find out what the angle should be from the direction vector
-	quaternion.setFromAxisAngle(normal, 0);
-	return quaternion.clone();
+	tempQuaternion.setFromRotationMatrix(tempMatrix);
+	return tempQuaternion.clone();
 }
 
 class XRHitTestResult {
@@ -132,6 +136,9 @@ function getHitTestResults(hitTestSource) {
 	const space = hitTestSource.__offsetRay ? hitTestSource.__space.getOffsetReferenceSpace(hitTestSource.__offsetRay) : hitTestSource.__space;
 
 	const pose = frame.getPose(space, referenceSpace);
+
+	if (pose === null) return [];
+
 	direction.set(0, 0, -1);
 	direction.applyQuaternion(pose.transform.orientation)
 	raycaster.set(pose.transform.position, direction);
@@ -157,7 +164,7 @@ export function renderEnvironment(camera) {
 	renderFunc(camera);
 }
 
-export async function init({ renderer, scene, environmentURL }) {
+export async function init({ renderer, scene, environmentURL = 'https://rawcdn.githack.com/AdaRoseCannon/immersive-ar-emulation/0d46e777c9e87719ca44ac7c4098403e4dc121e8/assets/room.glb' }) {
 	
 	if (!navigator.xr) return;
 './assets/room.glb'
