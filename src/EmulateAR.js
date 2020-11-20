@@ -79,11 +79,12 @@ const originVec = new Vector3();
 const tempVec = new Vector3();
 function normalToOrientation(normal, direction) {
 	tempMatrix.identity();
-	tempVec.crossVectors(normal, direction.multiplyScalar(-1)).normalize();
+	tempVec.crossVectors(normal, direction).normalize();
 	tempMatrix.lookAt(tempVec, originVec, normal);
 
 	// Find out what the angle should be from the direction vector
 	tempQuaternion.setFromRotationMatrix(tempMatrix);
+	tempQuaternion.rot
 	return tempQuaternion.clone();
 }
 
@@ -164,7 +165,7 @@ export function renderEnvironment(camera) {
 	renderFunc(camera);
 }
 
-export async function init({ renderer, scene, environmentURL = 'https://rawcdn.githack.com/AdaRoseCannon/immersive-ar-emulation/0d46e777c9e87719ca44ac7c4098403e4dc121e8/assets/room.glb' }) {
+export async function init({ renderer, scene, environmentURL = 'http://ada.is/immersive-ar-emulation/assets/room.glb' }) {
 	
 	if (!navigator.xr) return;
 './assets/room.glb'
