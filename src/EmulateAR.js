@@ -39,23 +39,40 @@ class HitTestSource {
 }
 
 const tempQuaternion = new THREE.Quaternion();
-const tempMatrix = new THREE.Matrix4();
-const originVec = new THREE.Vector3();
+const tempQuaternion2 = new THREE.Quaternion();
 const tempVec = new THREE.Vector3();
-const tempMatrix2 = new THREE.Matrix4();
+const directionProjectedOntoPlane = new THREE.Vector3();
 function normalToOrientation(normal, direction) {
-	tempMatrix.identity();
-	tempVec.crossVectors(normal, direction).normalize();
-	tempMatrix.lookAt(tempVec, originVec, normal);
+	normal.normalize();
+	direction.normalize();
 
-	// The model ends up looking perpendicular to the viewer so rotate by 90deg counter clockwise about the normal
-	tempMatrix2.makeRotationAxis(normal, Math.PI / 2);
-	tempMatrix.multiply(tempMatrix2);
+	tempVec.set(0, 1, 0);
 
 	// Find out what the angle should be from the direction vector
-	tempQuaternion.setFromRotationMatrix(tempMatrix);
-	tempQuaternion.rot
+	tempQuaternion.setFromUnitVectors(tempVec, normal);
+
+	const normalSquared = normal.lengthSq();
+	const vectorDotNormal = direction.dot(normal);
+
+	// get the direction projected onto the plane
+	directionProjectedOntoPlane.copy(normal).multiplyScalar(-1 * vectorDotNormal / normalSquared).add(direction);
+
+	// Get the -z unit vector in the plane
+	tempVec.set(0, 0, -1);
+	tempVec.applyQuaternion(tempQuaternion);
+
+	// calculate the angle between them
+	tempQuaternion2.setFromUnitVectors(tempVec, directionProjectedOntoPlane);
+
+	tempQuaternion.premultiply(tempQuaternion2);
+
 	return tempQuaternion.clone();
+}
+
+class EmulatedXRPose {
+	constructor(transform) {
+		this.transform = transform;
+	}
 }
 
 class XRHitTestResult {

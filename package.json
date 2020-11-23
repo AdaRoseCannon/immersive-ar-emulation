@@ -4,7 +4,7 @@
   "description": "Emulate Immersive AR in VR Headsets",
   "main": "build/EmulateAR.esm.js",
   "scripts": {
-    "build": "rm -rf build/*; cat src/wrapper.js src/EmulateAR.js > build/EmulateAR.esm.js; cp src/EmulateAR.js build/EmulateAR.js;"
+    "build": "rm -rf build/*; cat src/wrapper.js src/EmulateAR.js > build/EmulateAR.esm.js;"
   },
   "repository": {
     "type": "git",

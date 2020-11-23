@@ -8,7 +8,7 @@ import {
 	MeshBasicMaterial,
 	PlaneGeometry,
 	Mesh,
-	Color
+	TextureLoader
 } from "../node_modules/three/build/three.module.js";
 
 import {
@@ -29,7 +29,7 @@ import {
 	renderEnvironment,
 	applyImmersiveARProxy,
 	sceneModelURL
-} from "../build/EmulateAR.js";
+} from "../src/EmulateAR.js";
 
 const loader = new GLTFLoader();
 const dracoLoader = new DRACOLoader();
@@ -163,9 +163,11 @@ class HitTest {
 		return dog;
 	});
 
+	
+	const texture = new TextureLoader().load( 'assets/arrow.png' );
 	const reticle = new Mesh(
-		new PlaneGeometry(0.5, 0.5, 1, 1).rotateX(-Math.PI/2),
-		new MeshBasicMaterial({ color: new Color('blue') })
+		new PlaneGeometry(0.5, 0.5, 1, 1).rotateX(-Math.PI / 2),
+		new MeshBasicMaterial({ map: texture, transparent: true })
 	);
 	reticle.position.copy(target);
 	scene.add(reticle);
