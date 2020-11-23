@@ -54,10 +54,15 @@ const tempQuaternion = new THREE.Quaternion();
 const tempMatrix = new THREE.Matrix4();
 const originVec = new THREE.Vector3();
 const tempVec = new THREE.Vector3();
+const tempMatrix2 = new THREE.Matrix4();
 function normalToOrientation(normal, direction) {
 	tempMatrix.identity();
 	tempVec.crossVectors(normal, direction).normalize();
 	tempMatrix.lookAt(tempVec, originVec, normal);
+
+	// The model ends up looking perpendicular to the viewer so rotate by 90deg counter clockwise about the normal
+	tempMatrix2.makeRotationAxis(normal, Math.PI / 2);
+	tempMatrix.multiply(tempMatrix2);
 
 	// Find out what the angle should be from the direction vector
 	tempQuaternion.setFromRotationMatrix(tempMatrix);
