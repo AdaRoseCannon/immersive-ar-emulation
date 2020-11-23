@@ -4,7 +4,7 @@ const isSessionSupportedOld = navigator.xr.isSessionSupported.bind(navigator.xr)
 const requestSessionOld = navigator.xr.requestSession.bind(navigator.xr);
 const direction = new THREE.Vector3();
 const raycaster = new THREE.Raycaster();
-const sceneModelURL = 'http://ada.is/immersive-ar-emulation/assets/room.glb';
+const sceneModelURL = 'https://ada.is/immersive-ar-emulation/assets/room.glb';
 let inSession = false;
 let environmentModel;
 let referenceSpace;
