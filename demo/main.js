@@ -1,5 +1,3 @@
-import { init as initEmulateAR, renderEnvironment } from "../build/EmulateAR.js";
-
 import {
 	PerspectiveCamera,
 	SpotLight,
@@ -25,6 +23,13 @@ import {
 import {
 	ARButton
 } from "../node_modules/three/examples/jsm/webxr/ARButton.js";
+
+import {
+	init as initEmulateAR,
+	renderEnvironment,
+	applyImmersiveARProxy,
+	sceneModelURL
+} from "../build/EmulateAR.js";
 
 const loader = new GLTFLoader();
 const dracoLoader = new DRACOLoader();
@@ -137,7 +142,10 @@ class HitTest {
 }
 
 (async function init() {
-	await initEmulateAR({ scene, renderer }).catch(e => console.error(e));
+
+	const environment = (await loadModel(sceneModelURL)).scene;
+	initEmulateAR({ scene, renderer, environment });
+	await applyImmersiveARProxy();
 	
 	window.overlay.appendChild(ARButton.createButton(renderer, {
 		optionalFeatures: ["dom-overlay", "hit-test", "local-floor"],

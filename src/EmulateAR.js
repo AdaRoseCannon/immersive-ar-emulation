@@ -1,52 +1,26 @@
 import {
-	GLTFLoader
-} from "three/examples/jsm/loaders/GLTFLoader";
-
-import {
-	Raycaster,
+	Quaternion,
 	Vector3,
 	Matrix4,
-	Quaternion
-} from "three";
+	Raycaster
+} from 'three';
 
-const loader = new GLTFLoader();
-
-function loadModel(url) {
-	
-	return new Promise((resolve, reject) => {
-		loader.load(
-			url,
-			function ( gltf ) {
-				resolve( gltf );
-			},
-			function ( xhr ) {
-				console.log( ( xhr.loaded / xhr.total * 100 ) + `% loaded [${url}]` );
-			},
-			function ( error ) {
-				reject(error);
-			}
-		);
-	})
+const THREE = {
+	Quaternion,
+	Vector3,
+	Matrix4,
+	Raycaster
 }
 
+const isSessionSupportedOld = navigator.xr.isSessionSupported.bind(navigator.xr);
+const requestSessionOld = navigator.xr.requestSession.bind(navigator.xr);
+const direction = new THREE.Vector3();
+const raycaster = new THREE.Raycaster();
+const sceneModelURL = 'http://ada.is/immersive-ar-emulation/assets/room.glb';
+let inSession = false;
 let environmentModel;
-async function environment(scene, url) {
-
-	if (environmentModel) return environmentModel;
-
-	environmentModel = await loadModel(url)
-		.then(gltf => gltf.scene);
-	
-	scene.add(environmentModel);
-	
-	environmentModel.traverse(o => {
-		if (o.geometry && o.material) {
-			o.geometry.computeFaceNormals();
-		}
-	});
-	
-	return environmentModel;
-}
+let referenceSpace;
+let renderFunc = function () { };
 
 async function requestHitTestSource(options) {
 	const session = this;
@@ -69,14 +43,17 @@ class HitTestSource {
 	}
 
 	cancel() {
-
+		this.__space = null;
+		this.__offsetRay = null;
+		this.__session = null;
+		this.__canceled = true;
 	}
 }
 
-const tempQuaternion = new Quaternion();
-const tempMatrix = new Matrix4();
-const originVec = new Vector3();
-const tempVec = new Vector3();
+const tempQuaternion = new THREE.Quaternion();
+const tempMatrix = new THREE.Matrix4();
+const originVec = new THREE.Vector3();
+const tempVec = new THREE.Vector3();
 function normalToOrientation(normal, direction) {
 	tempMatrix.identity();
 	tempVec.crossVectors(normal, direction).normalize();
@@ -122,13 +99,10 @@ function getHitTestResultsForTransientInput() {
 	return [];
 }
 
-let referenceSpace;
 function setReferenceSpace(refSpace) {
 	referenceSpace = refSpace;
 }
 
-const direction = new Vector3();
-const raycaster = new Raycaster();
 function getHitTestResults(hitTestSource) {
 
 	if (!environmentModel) return [];
@@ -151,8 +125,6 @@ function getHitTestResults(hitTestSource) {
 		))
 }
 
-
-let inSession = false;
 function onSessionEnded() {
 	inSession = false;
 }
@@ -160,106 +132,137 @@ function onSessionStart() {
 	inSession = true;
 }
 
-let renderFunc = function () { };
-export function renderEnvironment(camera) {
+function renderEnvironment(camera) {
 	renderFunc(camera);
 }
 
-export async function init({ renderer, scene, environmentURL = 'http://ada.is/immersive-ar-emulation/assets/room.glb' }) {
-	
-	if (!navigator.xr) return;
-'./assets/room.glb'
+ async function immersiveARProxyRequired() {
+	// If there is no WebXR support then do nothing, probably on http
+	if (!navigator.xr) return false;
+
 	// if AR is already supported we don't need to do anything
-	if (await navigator.xr.isSessionSupported('immersive-ar')) return;
+	if (await navigator.xr.isSessionSupported('immersive-ar')) return false;
 
 	// if immersive-vr isn't supported then we can't do anything
-	if (! await navigator.xr.isSessionSupported('immersive-vr')) return;
+	if (! await navigator.xr.isSessionSupported('immersive-vr')) return false;
 
+	return true;
+}
+
+async function applyImmersiveARProxy() {
+	if (! await immersiveARProxyRequired()) return console.log('AR Proxy not applied,because either immersive-ar is already supported or immersive-vr is not supported.');
+
+	navigator.xr.requestSession = requestSession.bind(navigator.xr);
+	navigator.xr.isSessionSupported = isSessionSupported.bind(navigator.xr);
+}
+	
+function isSessionSupported(type) {
+	console.log('Proxied isSessionSupported');
+
+	if (type === 'immersive-ar') {
+		return isSessionSupportedOld('immersive-vr');
+	}
+	return isSessionSupportedOld(type);
+}
+
+async function requestSession(type, sessionInit) {
+	console.log('Proxied requestSession');
+
+	const featuresToPolyfill = [];
+	sessionInit.optionalFeatures = sessionInit.optionalFeatures.filter(function (name) {
+		switch (name) {
+			case 'hit-test':
+			case 'lighting-estimation':
+				featuresToPolyfill.push(name);
+				return false;
+			default:
+				return true;
+		}
+	});
+
+	if (type === 'immersive-ar') {
+		type = 'immersive-vr';
+	} else {
+		return;
+	}
+
+	const session = await requestSessionOld(type, sessionInit);
+
+	onSessionStart();
+	session.addEventListener( 'end', onSessionEnded );
+
+	Object.defineProperty(session, 'requestHitTestSource', {
+		value: requestHitTestSource,
+		configurable: true
+	});
+
+	Object.defineProperty(session, 'requestHitTestSourceForTransientInput', {
+		value: requestHitTestSourceForTransientInput,
+		configurable: true
+	});
+
+	const requestAnimationFrameOld = session.requestAnimationFrame.bind(session);
+	Object.defineProperty(session, 'requestAnimationFrame', {
+		value: function (animationFrameCallback) {
+			requestAnimationFrameOld(function (time, xrFrame) {
+
+				Object.defineProperty(xrFrame, 'getHitTestResultsForTransientInput', {
+					value: getHitTestResultsForTransientInput.bind(xrFrame),
+					configurable: true
+				});
+		
+				Object.defineProperty(xrFrame, 'getHitTestResults', {
+					value: getHitTestResults.bind(xrFrame),
+					configurable: true
+				});
+
+				animationFrameCallback(time, xrFrame);
+			})
+		},
+		configurable: true
+	});
+
+	return session;
+}
+
+function init({ renderer, scene, environment }) {
 
 	const bgscene = scene.clone(false);
 	renderFunc = function renderEnvironment(camera) {
 	
 		if (!inSession) return;
 		renderer.clear();
-		if (!environmentModel) return;
 		renderer.render(bgscene, camera);
 		renderer.clearDepth();
 	}
 
 	renderer.autoClear = false;
-	await environment(bgscene, environmentURL);
 	
-	renderer.xr.addEventListener('sessionstart', async function () {
+	renderer.xr.addEventListener('sessionstart', function () {
 
 		setReferenceSpace(renderer.xr.getReferenceSpace());
 
 	});
-
-	const requestSessionOld = navigator.xr.requestSession.bind(navigator.xr);
-	async function requestSession(type, sessionInit) {
-		console.log('Proxied requestSession');
 	
-		const featuresToPolyfill = [];
-		sessionInit.optionalFeatures = sessionInit.optionalFeatures.filter(function (name) {
-			switch (name) {
-				case 'hit-test':
-				case 'lighting-estimation':
-					featuresToPolyfill.push(name);
-					return false;
-				default:
-					return true;
-			}
-		});
-	
-		if (type === 'immersive-ar') {
-			type = 'immersive-vr';
-		} else {
-			return;
+	// Ensure normal vectors are available
+	environment.traverse(o => {
+		if (o.geometry && o.material) {
+			o.geometry.computeFaceNormals();
 		}
-
-		const session = await requestSessionOld(type, sessionInit);
-
-		onSessionStart();
-		session.addEventListener( 'end', onSessionEnded );
-
-		Object.defineProperty(session, 'requestHitTestSource', {
-			value: requestHitTestSource,
-			configurable: true
-		});
-
-		Object.defineProperty(session, 'requestHitTestSourceForTransientInput', {
-			value: requestHitTestSourceForTransientInput,
-			configurable: true
-		});
-
-		// Object.defineProperty(session, 'requestHitTestSourceForTransientInput', {
-		// 	value: requestHitTestSourceForTransientInput,
-		// 	configurable: true
-		// });
-
-		return session;
-	}
-	navigator.xr.requestSession = requestSession.bind(navigator.xr);
-
-	Object.defineProperty(window.XRFrame.prototype, 'getHitTestResultsForTransientInput', {
-		configurable: true,
-		value: getHitTestResultsForTransientInput
 	});
 
-	Object.defineProperty(window.XRFrame.prototype, 'getHitTestResults', {
-		configurable: true,
-		value: getHitTestResults
-	});
-	
-	const isSessionSupportedOld = navigator.xr.isSessionSupported.bind(navigator.xr);
-	function isSessionSupported(type) {
-		console.log('Proxied isSessionSupported');
-	
-		if (type === 'immersive-ar') {
-			return isSessionSupportedOld('immersive-vr');
-		}
-		return isSessionSupportedOld(type);
-	}
-	navigator.xr.isSessionSupported = isSessionSupported.bind(navigator.xr);
-	
+	bgscene.add(environment);
+
+	environmentModel = environment;
+
+}
+
+export {
+	init,
+	sceneModelURL,
+	requestSession, // async
+	renderEnvironment,
+	isSessionSupported, // async
+	applyImmersiveARProxy, //async
+	immersiveARProxyRequired, //async
 }
