@@ -1,5 +1,7 @@
 # Immersive AR Emulation for THREE.js
 
+![ezgif-1-c9a7ac33a76d](https://user-images.githubusercontent.com/4225330/100097900-1e470200-2e55-11eb-88d8-8e1544880780.gif)
+
 WebXR gives you the ability to build Augmented Reality experiences in the Web, both for handsets like phones and headsets. It's very possible to build
 a single code-path which works well for headsets and handsets without needing to detect which kind of hardware you are using.
 
