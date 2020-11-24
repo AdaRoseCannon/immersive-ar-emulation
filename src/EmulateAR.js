@@ -146,7 +146,7 @@ function renderEnvironment(camera) {
 	renderFunc(camera);
 }
 
- async function immersiveARProxyRequired() {
+async function immersiveARProxyRequired() {
 	// If there is no WebXR support then do nothing, probably on http
 	if (!navigator.xr) return false;
 
@@ -178,6 +178,12 @@ function isSessionSupported(type) {
 async function requestSession(type, sessionInit) {
 	console.log('Proxied requestSession');
 
+	if (type === 'immersive-ar') {
+		type = 'immersive-vr';
+	} else {
+		return requestSessionOld(type, sessionInit);
+	}
+
 	const featuresToPolyfill = [];
 	sessionInit.optionalFeatures = sessionInit.optionalFeatures.filter(function (name) {
 		switch (name) {
@@ -189,12 +195,6 @@ async function requestSession(type, sessionInit) {
 				return true;
 		}
 	});
-
-	if (type === 'immersive-ar') {
-		type = 'immersive-vr';
-	} else {
-		return;
-	}
 
 	const session = await requestSessionOld(type, sessionInit);
 
