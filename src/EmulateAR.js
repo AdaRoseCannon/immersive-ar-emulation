@@ -69,6 +69,7 @@ function normalToOrientation(normal, direction) {
 	return tempQuaternion.clone();
 }
 
+// eslint-disable-next-line no-unused-vars
 class EmulatedXRPose {
 	constructor(transform) {
 		this.transform = transform;
