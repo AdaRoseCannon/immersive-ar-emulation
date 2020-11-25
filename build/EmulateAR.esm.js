@@ -5,18 +5,15 @@ import {
 	Raycaster
 } from 'three';
 
+// eslint-disable-next-line no-unused-vars
 const THREE = {
 	Quaternion,
 	Vector3,
 	Matrix4,
 	Raycaster
 }
-/* global THREE */
-
 const isSessionSupportedOld = navigator.xr.isSessionSupported.bind(navigator.xr);
 const requestSessionOld = navigator.xr.requestSession.bind(navigator.xr);
-const direction = new THREE.Vector3();
-const raycaster = new THREE.Raycaster();
 const sceneModelURL = 'https://ada.is/immersive-ar-emulation/assets/room.glb';
 let inSession = false;
 let environmentModel;
@@ -51,37 +48,7 @@ class HitTestSource {
 	}
 }
 
-const tempQuaternion = new THREE.Quaternion();
-const tempQuaternion2 = new THREE.Quaternion();
-const tempVec = new THREE.Vector3();
-const directionProjectedOntoPlane = new THREE.Vector3();
-function normalToOrientation(normal, direction) {
-	normal.normalize();
-	direction.normalize();
-
-	tempVec.set(0, 1, 0);
-
-	// Find out what the angle should be from the direction vector
-	tempQuaternion.setFromUnitVectors(tempVec, normal);
-
-	const normalSquared = normal.lengthSq();
-	const vectorDotNormal = direction.dot(normal);
-
-	// get the direction projected onto the plane
-	directionProjectedOntoPlane.copy(normal).multiplyScalar(-1 * vectorDotNormal / normalSquared).add(direction);
-
-	// Get the -z unit vector in the plane
-	tempVec.set(0, 0, -1);
-	tempVec.applyQuaternion(tempQuaternion);
-
-	// calculate the angle between them
-	tempQuaternion2.setFromUnitVectors(tempVec, directionProjectedOntoPlane);
-
-	tempQuaternion.premultiply(tempQuaternion2);
-
-	return tempQuaternion.clone();
-}
-
+// eslint-disable-next-line no-unused-vars
 class EmulatedXRPose {
 	constructor(transform) {
 		this.transform = transform;
@@ -126,28 +93,6 @@ function setReferenceSpace(refSpace) {
 	referenceSpace = refSpace;
 }
 
-function getHitTestResults(hitTestSource) {
-
-	if (!environmentModel) return [];
-
-	const frame = this;
-	const space = hitTestSource.__offsetRay ? hitTestSource.__space.getOffsetReferenceSpace(hitTestSource.__offsetRay) : hitTestSource.__space;
-
-	const pose = frame.getPose(space, referenceSpace);
-
-	if (pose === null) return [];
-
-	direction.set(0, 0, -1);
-	direction.applyQuaternion(pose.transform.orientation)
-	raycaster.set(pose.transform.position, direction);
-	return raycaster.intersectObject(environmentModel, true)
-		.map(result => new XRHitTestResult(
-			frame,
-			result.point,
-			normalToOrientation(result.face.normal, direction)
-		))
-}
-
 function onSessionEnded() {
 	inSession = false;
 }
@@ -187,6 +132,8 @@ function isSessionSupported(type) {
 	}
 	return isSessionSupportedOld(type);
 }
+
+let getHitTestResults = function () { };
 
 async function requestSession(type, sessionInit) {
 	console.log('Proxied requestSession');
@@ -278,6 +225,60 @@ function init({ renderer, scene, environment }) {
 
 	environmentModel = environment;
 
+	const tempQuaternion = new THREE.Quaternion();
+	const tempQuaternion2 = new THREE.Quaternion();
+	const tempVec = new THREE.Vector3();
+	const directionProjectedOntoPlane = new THREE.Vector3();
+	function normalToOrientation(normal, direction) {
+		normal.normalize();
+		direction.normalize();
+	
+		tempVec.set(0, 1, 0);
+	
+		// Find out what the angle should be from the direction vector
+		tempQuaternion.setFromUnitVectors(tempVec, normal);
+	
+		const normalSquared = normal.lengthSq();
+		const vectorDotNormal = direction.dot(normal);
+	
+		// get the direction projected onto the plane
+		directionProjectedOntoPlane.copy(normal).multiplyScalar(-1 * vectorDotNormal / normalSquared).add(direction);
+	
+		// Get the -z unit vector in the plane
+		tempVec.set(0, 0, -1);
+		tempVec.applyQuaternion(tempQuaternion);
+	
+		// calculate the angle between them
+		tempQuaternion2.setFromUnitVectors(tempVec, directionProjectedOntoPlane);
+	
+		tempQuaternion.premultiply(tempQuaternion2);
+	
+		return tempQuaternion.clone();
+	}
+
+	const direction = new THREE.Vector3();
+	const raycaster = new THREE.Raycaster();
+	getHitTestResults = function getHitTestResults(hitTestSource) {
+	
+		if (!environmentModel) return [];
+	
+		const frame = this;
+		const space = hitTestSource.__offsetRay ? hitTestSource.__space.getOffsetReferenceSpace(hitTestSource.__offsetRay) : hitTestSource.__space;
+	
+		const pose = frame.getPose(space, referenceSpace);
+	
+		if (pose === null) return [];
+	
+		direction.set(0, 0, -1);
+		direction.applyQuaternion(pose.transform.orientation)
+		raycaster.set(pose.transform.position, direction);
+		return raycaster.intersectObject(environmentModel, true)
+			.map(result => new XRHitTestResult(
+				frame,
+				result.point,
+				normalToOrientation(result.face.normal, direction)
+			))
+	}
 }
 
 export {

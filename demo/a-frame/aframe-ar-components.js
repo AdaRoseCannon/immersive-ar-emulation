@@ -25,7 +25,6 @@ AFRAME.registerComponent("occlusion-material", {
 
 class HitTest {
 	constructor(renderer, options) {
-		console.log('Creating new HitTest');
 
 		this.renderer = renderer;
 		this.xrHitTestSource = null;

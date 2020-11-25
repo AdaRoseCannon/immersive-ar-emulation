@@ -25,9 +25,9 @@
 			content=""
 		/>
 
+		<script src="../../build/EmulateAR.aframe.js"></script>
 		<script src="https://cdn.jsdelivr.net/gh/aframevr/aframe@6e3b6c84391d50b45a1a3e801b74ca9d03ac8c09/dist/aframe-master.min.js"></script>
 		<script src="./aframe-ar-components.js"></script>
-		<script src="../../a-ar-components.js"></script>
 		
 		<style>
 
@@ -72,6 +72,7 @@
 			webxr="optionalFeatures: hit-test, local-floor, viewer, dom-overlay; referenceSpaceType: local; overlayElement: #overlay;"
 			gltf-model="dracoDecoderPath: ../../../../node_modules/three/examples/js/libs/draco/;"
 		>
+			<a-camera position="0 0.3 0"></a-camera>
 			<a-entity id="world" position="0 0 -1" hide-in-ar-mode>
 				<!-- The dog is CC by Joe McDowall from Sketchfab](https://sketchfab.com/3d-models/low-poly-doggy-1c8c763518ab4751bfcddf0b6a34011a -->
 				<a-gltf-model
@@ -107,7 +108,7 @@
 
 		<!-- This is displayed over the top of the content as a WebXR Dom Overlay and when the scene has not yet started a session -->
 		<div id="overlay">
-			<h1 style="grid-column-end: span 2; text-align: center;">AR Dog</h1>
+			<h1 style="grid-column-end: span 2; text-align: center; align-self: flex-start;">AR Doggy</h1>
 			<button id="enter-ar-btn">Enter AR</button>
 			<button id="enter-vr-btn">Enter VR</button>
 		</div>
