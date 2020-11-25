@@ -1,5 +1,9 @@
 # Immersive AR Emulation for THREE.js
 
+This project is still pretty new and will have lots of issues, it has not been widely tested, pull requests and contributions are very welcome.
+
+![ezgif-1-c9a7ac33a76d](https://user-images.githubusercontent.com/4225330/100097900-1e470200-2e55-11eb-88d8-8e1544880780.gif)
+
 WebXR gives you the ability to build Augmented Reality experiences in the Web, both for handsets like phones and headsets. It's very possible to build
 a single code-path which works well for headsets and handsets without needing to detect which kind of hardware you are using.
 
@@ -69,9 +73,13 @@ Unfortunately it does require some integrating into your code, for an example ap
 
 Import the code as shown above.
 
+### Step 2 - Get the environment GLB
+
 You can find the URL of the scene in `.glb` format to download in `sceneModelURL`,
 
 Download the model using the [ThreeJS GLTF Loader](https://threejs.org/docs/#examples/en/loaders/GLTFLoader).
+
+### Step 3 - Initialise the emulator
 
 Use this model and your scene and renderer to setup the emulator.
 
@@ -88,3 +96,16 @@ await applyImmersiveARProxy();
 
 but if you prefer to leave it unmodified you can use `immersiveARProxyRequired` to see if you need to add a button
 which can call `requestSession` and `isSessionSupported` from the emulator yourself.
+
+
+### Step 4 - Add the render hook
+
+It must go before the your render function. It ignores depth and turns off autoclear so it needs to first so
+that it clears the buffer and renders underneath the rest of your scene.
+
+```js
+renderer.setAnimationLoop(function (timestamp, frame) {
+	renderEnvironment(camera);
+	renderer.render(scene, camera);
+});
+```
