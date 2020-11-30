@@ -69,15 +69,14 @@
 	<body>
 		<a-scene
 			vr-mode-ui="enterVRButton: #enter-vr-btn; enterARButton: #enter-ar-btn"
-			webxr="optionalFeatures: hit-test, local-floor, viewer, dom-overlay; referenceSpaceType: local; overlayElement: #overlay;"
+			webxr="optionalFeatures: hit-test, viewer, dom-overlay; overlayElement: #overlay;"
 			gltf-model="dracoDecoderPath: ../../../../node_modules/three/examples/js/libs/draco/;"
 		>
 			<a-camera position="0 0.3 0"></a-camera>
-			<a-entity id="world" position="0 0 -1" hide-in-ar-mode>
+
+			<a-entity id="world" position="0 0 -1">
 				<!-- The dog is CC by Joe McDowall from Sketchfab](https://sketchfab.com/3d-models/low-poly-doggy-1c8c763518ab4751bfcddf0b6a34011a -->
 				<a-gltf-model
-					id="lion"
-					shadow="receive: false"
 					src="../assets/doggy.glb"
 					rotation="0 170 0"
 				></a-gltf-model>
@@ -88,11 +87,13 @@
 				id="reticle"
 				visible="false"
 				ar-hit-test="offset: 0 0;"
+				position="0 0 -1"
 			>
 				<a-plane
 					rotation="-90 0 0"
 					width="0.5"
 					height="0.5"
+					material="transparent: true"
 					src="../assets/arrow.png"
 				></a-plane>
 			</a-entity>
@@ -123,7 +124,7 @@
 						"generic-touchscreen" &&
 					event.detail.inputSource.gamepad
 				) {
-					// Handle input if you want via the axes -1, -1 is top left, 1, 1 is bottom right
+					// Handle screen touch input if you want via the axes -1, -1 is top left, 1, 1 is bottom right
 					const x = event.detail.inputSource.gamepad.axes[0];
 					const y = event.detail.inputSource.gamepad.axes[1];
 					console.log(x, y);

@@ -106,8 +106,6 @@ async function immersiveARProxyRequired() {
 }
 
 async function applyImmersiveARProxy() {
-	if (! await immersiveARProxyRequired()) return console.log('AR Proxy not applied,because either immersive-ar is already supported or immersive-vr is not supported.');
-
 	navigator.xr.requestSession = requestSession.bind(navigator.xr);
 	navigator.xr.isSessionSupported = isSessionSupported.bind(navigator.xr);
 }
@@ -123,31 +121,7 @@ function isSessionSupported(type) {
 
 let getHitTestResults = function () { };
 
-async function requestSession(type, sessionInit) {
-	console.log('Proxied requestSession');
-
-	if (type === 'immersive-ar') {
-		type = 'immersive-vr';
-	} else {
-		return requestSessionOld(type, sessionInit);
-	}
-
-	const featuresToPolyfill = [];
-	sessionInit.optionalFeatures = sessionInit.optionalFeatures.filter(function (name) {
-		switch (name) {
-			case 'hit-test':
-			case 'lighting-estimation':
-				featuresToPolyfill.push(name);
-				return false;
-			default:
-				return true;
-		}
-	});
-
-	const session = await requestSessionOld(type, sessionInit);
-
-	onSessionStart();
-	session.addEventListener( 'end', onSessionEnded );
+function polyfillHitTest(session) {
 
 	Object.defineProperty(session, 'requestHitTestSource', {
 		value: requestHitTestSource,
@@ -180,6 +154,42 @@ async function requestSession(type, sessionInit) {
 		configurable: true
 	});
 
+}
+
+async function requestSession(type, sessionInit) {
+	console.log('Proxied requestSession');
+
+	if (type != 'immersive-ar') {
+		return requestSessionOld(type, sessionInit);
+	}
+	
+	type = 'immersive-vr';
+
+	const featuresToPolyfill = [];
+	sessionInit.optionalFeatures = sessionInit.optionalFeatures.filter(function (name) {
+		switch (name) {
+			case 'hit-test':
+			case 'lighting-estimation':
+				featuresToPolyfill.push(name);
+				return false;
+			default:
+				return true;
+		}
+	});
+
+	const session = await requestSessionOld(type, sessionInit);
+
+	onSessionStart();
+	session.addEventListener( 'end', onSessionEnded );
+
+	if (featuresToPolyfill.includes('hit-test')) {
+		polyfillHitTest(session);
+	}
+
+	if (featuresToPolyfill.includes('lighting-estimation')) {
+		console.log('lighting-estimation is not supported by the immersive-ar emulator');
+	}
+
 	return session;
 }
 
@@ -187,9 +197,9 @@ function init({ renderer, scene, environment }) {
 
 	const bgscene = scene.clone(false);
 	renderFunc = function renderEnvironment(camera) {
+		renderer.clear();
 	
 		if (!inSession) return;
-		renderer.clear();
 		renderer.render(bgscene, camera);
 		renderer.clearDepth();
 	}

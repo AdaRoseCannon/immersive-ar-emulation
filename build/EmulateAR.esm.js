@@ -12,6 +12,8 @@ const THREE = {
 	Matrix4,
 	Raycaster
 }
+/* global THREE */
+
 const isSessionSupportedOld = navigator.xr.isSessionSupported.bind(navigator.xr);
 const requestSessionOld = navigator.xr.requestSession.bind(navigator.xr);
 const sceneModelURL = 'https://ada.is/immersive-ar-emulation/assets/room.glb';
@@ -199,9 +201,9 @@ function init({ renderer, scene, environment }) {
 
 	const bgscene = scene.clone(false);
 	renderFunc = function renderEnvironment(camera) {
+		renderer.clear();
 	
 		if (!inSession) return;
-		renderer.clear();
 		renderer.render(bgscene, camera);
 		renderer.clearDepth();
 	}

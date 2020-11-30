@@ -46,7 +46,7 @@ window.addEventListener('DOMContentLoaded', function () {
 			initEmulateAR({ scene, renderer, environment });
 		},
 		tick() {
-			renderEnvironment(this.el.camera);
+			renderEnvironment(this.el.camera);	
 		}
 	});
 	
