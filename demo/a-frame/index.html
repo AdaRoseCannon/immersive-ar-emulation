@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<script>
+			if (!navigator.xr && window.location.protocol === "http:")
+				window.location.protocol = "https:";
+		</script>
+
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+
+		<title>AFrame Augmented Reality</title>
+		<meta property="og:title" content="A-Frame Hit Test Demo" />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:site" content="@lady_ada_king" />
+		<meta name="twitter:creator" content="@lady_ada_king" />
+		<meta property="og:url" content="https://hit-test.glitch.me/" />
+		<meta
+			property="og:description"
+			content="Remix to make your own augmented reality scenes."
+		/>
+		<meta
+			property="og:image"
+			content=""
+		/>
+
+		<script src="../../build/EmulateAR.aframe.js"></script>
+		<script src="https://cdn.jsdelivr.net/gh/aframevr/aframe@6e3b6c84391d50b45a1a3e801b74ca9d03ac8c09/dist/aframe-master.min.js"></script>
+		<script src="./aframe-ar-components.js"></script>
+		
+		<style>
+
+			#overlay {
+				overflow: hidden;
+				position: absolute;
+				pointer-events: none;
+				display: grid;
+				grid-template: 1fr min-content/1fr 1fr;
+				box-sizing: border-box;
+				bottom: 0;
+				left: 0;
+				right:0;
+				top: 0;
+				z-index: 100;
+				padding: 1em;
+				font-family: sans-serif;
+			}
+
+			#overlay > * {
+				pointer-events: auto;
+			}
+
+			button {
+				font-size: 2em;
+				appearance: none;
+				border: 0.15em solid;
+				background: transparent;
+				border-radius: 1em;
+				padding: 0.1em 0.5em;
+				color: white;
+				cursor: pointer;
+				margin: 0 0.5em;
+				background-color: rgba(0,0,0,0.4);
+				backdrop-filter: blur(10px);
+			}
+		</style>
+	</head>
+	<body>
+		<a-scene
+			vr-mode-ui="enterVRButton: #enter-vr-btn; enterARButton: #enter-ar-btn"
+			webxr="optionalFeatures: hit-test, viewer, dom-overlay; overlayElement: #overlay;"
+			gltf-model="dracoDecoderPath: ../../../../node_modules/three/examples/js/libs/draco/;"
+		>
+			<a-camera position="0 0.3 0"></a-camera>
+
+			<a-entity id="world" position="0 0 -1">
+				<!-- The dog is CC by Joe McDowall from Sketchfab](https://sketchfab.com/3d-models/low-poly-doggy-1c8c763518ab4751bfcddf0b6a34011a -->
+				<a-gltf-model
+					src="../assets/doggy.glb"
+					rotation="0 170 0"
+				></a-gltf-model>
+			</a-entity>
+
+			<!-- This is the pointer for working out where to place the object -->
+			<a-entity
+				id="reticle"
+				visible="false"
+				ar-hit-test="offset: 0 0;"
+				position="0 0 -1"
+			>
+				<a-plane
+					rotation="-90 0 0"
+					width="0.5"
+					height="0.5"
+					material="transparent: true"
+					src="../assets/arrow.png"
+				></a-plane>
+			</a-entity>
+
+			<a-sky
+				hide-in-ar-mode
+				color="#ECECEC"
+				material=""
+				geometry=""
+				scale="1 1 1"
+			></a-sky>
+		</a-scene>
+
+		<!-- This is displayed over the top of the content as a WebXR Dom Overlay and when the scene has not yet started a session -->
+		<div id="overlay">
+			<h1 style="grid-column-end: span 2; text-align: center; align-self: flex-start;">AR Doggy</h1>
+			<button id="enter-ar-btn">Enter AR</button>
+			<button id="enter-vr-btn">Enter VR</button>
+		</div>
+
+		<!-- When the user releases their finger then move the god to the reticle -->
+		<script>
+			// When the user does a select action, such as tapping on the screen in handheld AR it will update the position
+			const reticle = document.getElementById("reticle");
+			reticle.addEventListener("select", function (event) {
+				if (
+					event.detail.inputSource.profiles[0] ===
+						"generic-touchscreen" &&
+					event.detail.inputSource.gamepad
+				) {
+					// Handle screen touch input if you want via the axes -1, -1 is top left, 1, 1 is bottom right
+					const x = event.detail.inputSource.gamepad.axes[0];
+					const y = event.detail.inputSource.gamepad.axes[1];
+					console.log(x, y);
+				}
+
+				const position = this.getAttribute("position");
+				const quaternion = this.object3D.quaternion;
+				document
+					.getElementById("world")
+					.setAttribute("position", position);
+				document
+					.getElementById("world")
+					.object3D.quaternion.copy(quaternion);
+				document
+					.getElementById("world")
+					.setAttribute("visible", true);
+			});
+		</script>
+	</body>
+</html>

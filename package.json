@@ -4,7 +4,8 @@
   "description": "Emulate Immersive AR in VR Headsets",
   "main": "build/EmulateAR.esm.js",
   "scripts": {
-    "build": "rm -rf build/*; cat src/wrapper.js src/EmulateAR.js > build/EmulateAR.esm.js;"
+    "build": "rm -rf build/*; cat src/wrapper.js src/EmulateAR.js > build/EmulateAR.esm.js; rollup -c; find build -maxdepth 1 -not -type d -exec du -h {} \\;",
+    "develop": "rollup -w -c; find build -maxdepth 1 -not -type d -exec du -h {} \\;"
   },
   "repository": {
     "type": "git",
@@ -16,8 +17,12 @@
     "url": "https://github.com/AdaRoseCannon/immersive-ar-emulation/issues"
   },
   "homepage": "https://github.com/AdaRoseCannon/immersive-ar-emulation#readme",
-  "devDependencies": {
+  "dependencies": {
+    "three": "^0.122.0",
     "eslint": "^7",
-    "three": "^0.122.0"
+    "rollup": "^2.29.0",
+    "@rollup/plugin-node-resolve": "^9",
+    "rollup-plugin-commonjs": "^10.1.0",
+    "rollup-plugin-terser": "^7.0.2"
   }
 }

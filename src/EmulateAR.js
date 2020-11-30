@@ -2,8 +2,6 @@
 
 const isSessionSupportedOld = navigator.xr.isSessionSupported.bind(navigator.xr);
 const requestSessionOld = navigator.xr.requestSession.bind(navigator.xr);
-const direction = new THREE.Vector3();
-const raycaster = new THREE.Raycaster();
 const sceneModelURL = 'https://ada.is/immersive-ar-emulation/assets/room.glb';
 let inSession = false;
 let environmentModel;
@@ -38,37 +36,7 @@ class HitTestSource {
 	}
 }
 
-const tempQuaternion = new THREE.Quaternion();
-const tempQuaternion2 = new THREE.Quaternion();
-const tempVec = new THREE.Vector3();
-const directionProjectedOntoPlane = new THREE.Vector3();
-function normalToOrientation(normal, direction) {
-	normal.normalize();
-	direction.normalize();
-
-	tempVec.set(0, 1, 0);
-
-	// Find out what the angle should be from the direction vector
-	tempQuaternion.setFromUnitVectors(tempVec, normal);
-
-	const normalSquared = normal.lengthSq();
-	const vectorDotNormal = direction.dot(normal);
-
-	// get the direction projected onto the plane
-	directionProjectedOntoPlane.copy(normal).multiplyScalar(-1 * vectorDotNormal / normalSquared).add(direction);
-
-	// Get the -z unit vector in the plane
-	tempVec.set(0, 0, -1);
-	tempVec.applyQuaternion(tempQuaternion);
-
-	// calculate the angle between them
-	tempQuaternion2.setFromUnitVectors(tempVec, directionProjectedOntoPlane);
-
-	tempQuaternion.premultiply(tempQuaternion2);
-
-	return tempQuaternion.clone();
-}
-
+// eslint-disable-next-line no-unused-vars
 class EmulatedXRPose {
 	constructor(transform) {
 		this.transform = transform;
@@ -113,28 +81,6 @@ function setReferenceSpace(refSpace) {
 	referenceSpace = refSpace;
 }
 
-function getHitTestResults(hitTestSource) {
-
-	if (!environmentModel) return [];
-
-	const frame = this;
-	const space = hitTestSource.__offsetRay ? hitTestSource.__space.getOffsetReferenceSpace(hitTestSource.__offsetRay) : hitTestSource.__space;
-
-	const pose = frame.getPose(space, referenceSpace);
-
-	if (pose === null) return [];
-
-	direction.set(0, 0, -1);
-	direction.applyQuaternion(pose.transform.orientation)
-	raycaster.set(pose.transform.position, direction);
-	return raycaster.intersectObject(environmentModel, true)
-		.map(result => new XRHitTestResult(
-			frame,
-			result.point,
-			normalToOrientation(result.face.normal, direction)
-		))
-}
-
 function onSessionEnded() {
 	inSession = false;
 }
@@ -160,8 +106,6 @@ async function immersiveARProxyRequired() {
 }
 
 async function applyImmersiveARProxy() {
-	if (! await immersiveARProxyRequired()) return console.log('AR Proxy not applied,because either immersive-ar is already supported or immersive-vr is not supported.');
-
 	navigator.xr.requestSession = requestSession.bind(navigator.xr);
 	navigator.xr.isSessionSupported = isSessionSupported.bind(navigator.xr);
 }
@@ -175,31 +119,9 @@ function isSessionSupported(type) {
 	return isSessionSupportedOld(type);
 }
 
-async function requestSession(type, sessionInit) {
-	console.log('Proxied requestSession');
+let getHitTestResults = function () { };
 
-	if (type === 'immersive-ar') {
-		type = 'immersive-vr';
-	} else {
-		return requestSessionOld(type, sessionInit);
-	}
-
-	const featuresToPolyfill = [];
-	sessionInit.optionalFeatures = sessionInit.optionalFeatures.filter(function (name) {
-		switch (name) {
-			case 'hit-test':
-			case 'lighting-estimation':
-				featuresToPolyfill.push(name);
-				return false;
-			default:
-				return true;
-		}
-	});
-
-	const session = await requestSessionOld(type, sessionInit);
-
-	onSessionStart();
-	session.addEventListener( 'end', onSessionEnded );
+function polyfillHitTest(session) {
 
 	Object.defineProperty(session, 'requestHitTestSource', {
 		value: requestHitTestSource,
@@ -232,6 +154,42 @@ async function requestSession(type, sessionInit) {
 		configurable: true
 	});
 
+}
+
+async function requestSession(type, sessionInit) {
+	console.log('Proxied requestSession');
+
+	if (type != 'immersive-ar') {
+		return requestSessionOld(type, sessionInit);
+	}
+	
+	type = 'immersive-vr';
+
+	const featuresToPolyfill = [];
+	sessionInit.optionalFeatures = sessionInit.optionalFeatures.filter(function (name) {
+		switch (name) {
+			case 'hit-test':
+			case 'lighting-estimation':
+				featuresToPolyfill.push(name);
+				return false;
+			default:
+				return true;
+		}
+	});
+
+	const session = await requestSessionOld(type, sessionInit);
+
+	onSessionStart();
+	session.addEventListener( 'end', onSessionEnded );
+
+	if (featuresToPolyfill.includes('hit-test')) {
+		polyfillHitTest(session);
+	}
+
+	if (featuresToPolyfill.includes('lighting-estimation')) {
+		console.log('lighting-estimation is not supported by the immersive-ar emulator');
+	}
+
 	return session;
 }
 
@@ -239,9 +197,9 @@ function init({ renderer, scene, environment }) {
 
 	const bgscene = scene.clone(false);
 	renderFunc = function renderEnvironment(camera) {
+		renderer.clear();
 	
 		if (!inSession) return;
-		renderer.clear();
 		renderer.render(bgscene, camera);
 		renderer.clearDepth();
 	}
@@ -265,6 +223,60 @@ function init({ renderer, scene, environment }) {
 
 	environmentModel = environment;
 
+	const tempQuaternion = new THREE.Quaternion();
+	const tempQuaternion2 = new THREE.Quaternion();
+	const tempVec = new THREE.Vector3();
+	const directionProjectedOntoPlane = new THREE.Vector3();
+	function normalToOrientation(normal, direction) {
+		normal.normalize();
+		direction.normalize();
+	
+		tempVec.set(0, 1, 0);
+	
+		// Find out what the angle should be from the direction vector
+		tempQuaternion.setFromUnitVectors(tempVec, normal);
+	
+		const normalSquared = normal.lengthSq();
+		const vectorDotNormal = direction.dot(normal);
+	
+		// get the direction projected onto the plane
+		directionProjectedOntoPlane.copy(normal).multiplyScalar(-1 * vectorDotNormal / normalSquared).add(direction);
+	
+		// Get the -z unit vector in the plane
+		tempVec.set(0, 0, -1);
+		tempVec.applyQuaternion(tempQuaternion);
+	
+		// calculate the angle between them
+		tempQuaternion2.setFromUnitVectors(tempVec, directionProjectedOntoPlane);
+	
+		tempQuaternion.premultiply(tempQuaternion2);
+	
+		return tempQuaternion.clone();
+	}
+
+	const direction = new THREE.Vector3();
+	const raycaster = new THREE.Raycaster();
+	getHitTestResults = function getHitTestResults(hitTestSource) {
+	
+		if (!environmentModel) return [];
+	
+		const frame = this;
+		const space = hitTestSource.__offsetRay ? hitTestSource.__space.getOffsetReferenceSpace(hitTestSource.__offsetRay) : hitTestSource.__space;
+	
+		const pose = frame.getPose(space, referenceSpace);
+	
+		if (pose === null) return [];
+	
+		direction.set(0, 0, -1);
+		direction.applyQuaternion(pose.transform.orientation)
+		raycaster.set(pose.transform.position, direction);
+		return raycaster.intersectObject(environmentModel, true)
+			.map(result => new XRHitTestResult(
+				frame,
+				result.point,
+				normalToOrientation(result.face.normal, direction)
+			))
+	}
 }
 
 export {
