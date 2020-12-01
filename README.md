@@ -65,7 +65,20 @@ import {
 } from "immersive-ar-emulation";
 ```
 
-## Usage
+## Usage A-Frame
+
+Demo: [A-Frame Demo for this Emulator](https://adarosecannon.github.io/immersive-ar-emulation/demo/a-frame/index.html)
+
+Add the `EmulateAR.aframe.js` **BEFORE** the AFrame the script.
+
+```html
+<script src="../../build/EmulateAR.aframe.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/aframevr/aframe@6e3b6c84391d50b45a1a3e801b74ca9d03ac8c09/dist/aframe-master.min.js"></script>
+```
+
+Then set up AR as normal
+
+## Usage THREE.JS
 
 Unfortunately it does require some integrating into your code, for an example app checkout the `demo/` folder of this repo.
 
@@ -85,13 +98,13 @@ Use this model and your scene and renderer to setup the emulator.
 
 ```js
 const environment = (await loadModel(sceneModelURL)).scene;
-initEmulateAR({ scene, renderer, environment });
+initEmulateAR({ renderer, environment });
 ```
 
 You can then either apply the immersive-ar proxy to modify to `navigator.xr`
 
 ```js
-await applyImmersiveARProxy();
+applyImmersiveARProxy();
 ```
 
 but if you prefer to leave it unmodified you can use `immersiveARProxyRequired` to see if you need to add a button
