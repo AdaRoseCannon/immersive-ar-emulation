@@ -173,9 +173,16 @@ function polyfillHitTest(session) {
 async function requestSession(type, sessionInit) {
 	console.log('Proxied requestSession');
 
-	if (type != 'immersive-ar') {
+	// If the type isn't immersive-ar
+	// or if the immersive-ar type is supported natively already
+	// then do the normal behaviour
+	if (
+		type != 'immersive-ar' ||
+		await isSessionSupportedOld('immersive-ar')
+	) {
 		return requestSessionOld(type, sessionInit);
 	}
+
 	
 	type = 'immersive-vr';
 
@@ -207,15 +214,18 @@ async function requestSession(type, sessionInit) {
 	return session;
 }
 
-function init({ renderer, scene, environment }) {
+function init({ renderer, environment }) {
 
-	const bgscene = scene.clone(false);
+	const bgscene = new THREE.Scene();
 	renderFunc = function renderEnvironment(camera) {
 		renderer.clear();
 	
 		if (!inSession) return;
+		const oldParent = camera.parent;
+		bgscene.add(camera);
 		renderer.render(bgscene, camera);
 		renderer.clearDepth();
+		oldParent.add(camera);
 	}
 
 	renderer.autoClear = false;

@@ -38,12 +38,11 @@ window.addEventListener('DOMContentLoaded', function () {
 	
 		init: function () {
 			const renderer = this.el.renderer;
-			const scene = this.el.object3D;
 			const environment = new THREE.Object3D();
 	
 			loadModel(sceneModelURL)
 				.then(({ scene }) => environment.add(scene));
-			initEmulateAR({ scene, renderer, environment });
+			initEmulateAR({ renderer, environment });
 		},
 		tick() {
 			renderEnvironment(this.el.camera);	

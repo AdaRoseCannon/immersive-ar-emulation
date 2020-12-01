@@ -144,7 +144,7 @@ class HitTest {
 (async function init() {
 
 	const environment = (await loadModel(sceneModelURL)).scene;
-	initEmulateAR({ scene, renderer, environment });
+	initEmulateAR({ renderer, environment });
 	await applyImmersiveARProxy();
 	
 	window.overlay.appendChild(ARButton.createButton(renderer, {
