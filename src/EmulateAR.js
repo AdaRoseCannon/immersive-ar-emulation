@@ -169,6 +169,7 @@ async function requestSession(type, sessionInit) {
 		return requestSessionOld(type, sessionInit);
 	}
 
+	console.log('Emulating AR in "immersive-vr"');
 	
 	type = 'immersive-vr';
 
