@@ -76,7 +76,7 @@ Add the `EmulateAR.aframe.js` **BEFORE** the AFrame the script.
 <script src="https://cdn.jsdelivr.net/gh/aframevr/aframe@6e3b6c84391d50b45a1a3e801b74ca9d03ac8c09/dist/aframe-master.min.js"></script>
 ```
 
-Then set up AR as normal
+Then set up AR in A-Frame as usual.
 
 ## Usage THREE.JS
 
