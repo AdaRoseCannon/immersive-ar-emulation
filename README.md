@@ -1,4 +1,4 @@
-# Immersive AR Emulation for THREE.js
+# Immersive AR Emulation for AFRAME & THREE.js
 
 This project is still pretty new and will have lots of issues, it has not been widely tested, pull requests and contributions are very welcome.
 
